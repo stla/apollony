@@ -1,5 +1,6 @@
 module Soddy.SoddyCircle
   where
+import Data.Complex
 
 type Point2 = (Double,Double)
 
@@ -26,3 +27,37 @@ soddyCenter p1@(x1,y1) p2@(x2,y2) p3@(x3,y3) =
   k1 = a*tc1/den
   k2 = b*tc2/den
   k3 = c*tc3/den
+
+soddyCircle :: (Point2, Double) -> (Point2, Double) -> (Point2, Double)
+            -> (Point2, Double)
+soddyCircle (p1,r1) (p2,r2) (p3,r3) =
+  (soddyCenter p1 p2 p3, soddyRadius r1 r2 r3)
+
+-- case of an exterior circle c3
+soddyCircle' :: (Point2, Double) -> (Point2, Double) -> (Point2, Double)
+             -> (Point2, Double)
+soddyCircle' (p1,r1) (p2,r2) (p3,r3) = sol
+  where
+  r = soddyRadius r1 r2 (-r3)
+  z1 = uncurry (:+) p1
+  z2 = uncurry (:+) p2
+  z3 = uncurry (:+) p3
+  toCplx x = x :+ 0.0
+  term1 = toCplx(1/r1) * z1 + toCplx(1/r2) * z2 - toCplx(1/r3) * z3
+  term2 = 2*sqrt(toCplx(1/r1/r2) * z1*z2 - toCplx(1/r2/r3) * z2*z3 -
+                 toCplx(1/r1/r3) * z1*z3)
+  center1 = toCplx r * (term1-term2)
+  center2 = toCplx r * (term1+term2)
+  center1_x = realPart center1
+  center1_y = imagPart center1
+  center2_x = realPart center2
+  center2_y = imagPart center2
+  c3_x = fst p3
+  c3_y = snd p3
+  d1 = (center1_x - c3_x)*(center1_x - c3_x) +
+       (center1_y - c3_y)*(center1_y - c3_y)
+  d2 = (center2_x - c3_x)*(center2_x - c3_x) +
+       (center2_y - c3_y)*(center2_y - c3_y)
+  sol = if d1 > d2
+    then ((center1_x, center1_y),r)
+    else ((center2_x, center2_y),r)

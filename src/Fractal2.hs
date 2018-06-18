@@ -1,7 +1,7 @@
-module Fractal1
+module Fractal2
   (main)
   where
-import           Apollony.Apollony1           (fractal)
+import           Apollony.Apollony2           (fractal)
 import           Data.IORef
 import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
@@ -48,8 +48,7 @@ resize zoom s@(Size w h) = do
   matrixMode $= Projection
   loadIdentity
   perspective 45.0 (w'/h') 1.0 100.0
-  let a = -1 / (4*sqrt 3)
-  lookAt (Vertex3 0 a (-1.2+zoom)) (Vertex3 0 a 0) (Vector3 0 1 0)
+  lookAt (Vertex3 0 0 (-5.5+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
   matrixMode $= Modelview 0
   where
     w' = realToFrac w
