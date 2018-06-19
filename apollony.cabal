@@ -17,9 +17,13 @@ library
                      , Apollony.Apollony1
                      , Apollony.Apollony2
                      , Fractal2
+                     , Fractal2anim
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
+                     , gl-capture
+                     , bytestring
+                     , directory
   default-language:    Haskell2010
   ghc-options:         -Wall
 

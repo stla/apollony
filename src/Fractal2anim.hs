@@ -1,0 +1,150 @@
+module Fractal2anim
+  (main)
+  where
+import           Apollony.Apollony2                (fractal)
+import           Control.Monad                     (when)
+import qualified Data.ByteString                   as B
+import           Data.IORef
+import           Graphics.Rendering.OpenGL.Capture (capturePPM)
+import           Graphics.Rendering.OpenGL.GL
+import           Graphics.UI.GLUT
+import           System.Directory                  (doesDirectoryExist)
+import           Text.Printf
+
+
+white,black,red :: Color4 GLfloat
+white      = Color4    1    1    1    1
+black      = Color4    0    0    0    1
+red        = Color4    1    0    0    1
+
+data Context = Context
+    {
+      contextRot1    :: IORef GLfloat
+    , contextRot2    :: IORef GLfloat
+    , contextRot3    :: IORef GLfloat
+    , contextSpheres :: IORef [((Double,Double),Double)]
+    }
+
+display :: Context -> IORef Double -> DisplayCallback
+display context zoom = do
+  clear [ColorBuffer, DepthBuffer]
+  spheres <- get (contextSpheres context)
+  zoom' <- get zoom
+  r1 <- get (contextRot1 context)
+  r2 <- get (contextRot2 context)
+  r3 <- get (contextRot3 context)
+  loadIdentity
+  (_, size) <- get viewport
+  resize zoom' size
+  rotate r1 $ Vector3 1 0 0
+  rotate r2 $ Vector3 0 1 0
+  rotate r3 $ Vector3 0 0 1
+  mapM_ (\(center,radius) -> preservingMatrix $ do
+                  translate (toVector3 center)
+                  materialDiffuse Front $= red
+                  renderObject Solid $ Sphere' radius 64 64)
+        spheres
+  swapBuffers
+  where
+    toVector3 (x,y) = Vector3 x y 0
+
+resize :: Double -> Size -> IO ()
+resize zoom s@(Size w h) = do
+  viewport $= (Position 0 0, s)
+  matrixMode $= Projection
+  loadIdentity
+  perspective 45.0 (w'/h') 1.0 100.0
+  lookAt (Vertex3 0 0 (-5.5+zoom)) (Vertex3 0 0 0) (Vector3 0 1 0)
+  matrixMode $= Modelview 0
+  where
+    w' = realToFrac w
+    h' = realToFrac h
+
+keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
+         -> IORef GLdouble -- zoom
+         -> IORef Int -- depth
+         -> IORef Bool -- animation
+         -> IORef [((Double,Double),Double)]
+         -> KeyboardCallback
+keyboard rot1 rot2 rot3 zoom depth anim spheres c _ = do
+  case c of
+    'e' -> rot1 $~! subtract 2
+    'r' -> rot1 $~! (+2)
+    't' -> rot2 $~! subtract 2
+    'y' -> rot2 $~! (+2)
+    'u' -> rot3 $~! subtract 2
+    'i' -> rot3 $~! (+2)
+    'm' -> zoom $~! (+0.1)
+    'l' -> zoom $~! subtract 0.1
+    'h' -> do
+      depth $~! (+1)
+      depth' <- get depth
+      writeIORef spheres (fractal depth')
+    'n' -> do
+      depth $~! (\n -> if n>1 then n-1 else n)
+      depth' <- get depth
+      writeIORef spheres (fractal depth')
+    'a' -> anim $~! not
+    'q' -> leaveMainLoop
+    _   -> return ()
+  postRedisplay Nothing
+
+idle :: IORef Bool -> IORef GLfloat -> IORef Int -> IdleCallback
+idle anim rot3 snapshot = do
+  anim' <- get anim
+  when anim' $ do
+    snapshot $~! (+1)
+    snapshot' <- get snapshot
+    -- depth' <- get depth
+    -- writeIORef spheres (fractal depth')
+    rot3 $~! (+1)
+    ppmExists <- doesDirectoryExist "./ppm"
+    when (ppmExists && snapshot' <= 120) $ do
+      let ppm = printf "ppm/pic%04d.ppm" snapshot'
+      (>>=) capturePPM (B.writeFile ppm)
+    postRedisplay Nothing
+  return ()
+
+
+
+main :: IO ()
+main = do
+  _ <- getArgsAndInitialize
+  _ <- createWindow "Apollonian gasket"
+  windowSize $= Size 500 500
+  initialDisplayMode $= [RGBAMode, DoubleBuffered, WithDepthBuffer]
+  clearColor $= black
+  materialAmbient FrontAndBack $= black
+  lighting $= Enabled
+  light (Light 0) $= Enabled
+  position (Light 0) $= Vertex4 0 0 (-500) 1
+  ambient (Light 0) $= white
+  diffuse (Light 0) $= white
+  specular (Light 0) $= white
+  depthFunc $= Just Less
+  shadeModel $= Smooth
+  rot1 <- newIORef 0.0
+  rot2 <- newIORef 0.0
+  rot3 <- newIORef 0.0
+  zoom <- newIORef 0.0
+  let depth = 1
+      spheres = fractal depth
+  depth' <- newIORef depth
+  spheres' <- newIORef spheres
+  displayCallback $= display Context {contextRot1 = rot1,
+                                      contextRot2 = rot2,
+                                      contextRot3 = rot3,
+                                      contextSpheres = spheres'}
+                             zoom
+  reshapeCallback $= Just (resize 0)
+  anim <- newIORef False
+  keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom depth' anim spheres')
+  snapshot <- newIORef 0
+  idleCallback $= Just (idle anim rot3 snapshot)
+  putStrLn "*** Apollonian gasket ***\n\
+        \    To quit, press q.\n\
+        \    Scene rotation: e, r, t, y, u, i\n\
+        \    Zoom: l, m\n\
+        \    Increase/decrease depth: h, n\n\
+        \"
+  mainLoop
