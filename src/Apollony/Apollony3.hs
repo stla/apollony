@@ -1,9 +1,10 @@
 module Apollony.Apollony3
+  (fractal)
   where
-import Soddy.SoddyCircle2 (soddyCircle')
-import Soddy.SoddyCircle (Point2, soddyCircle)
-import Data.Maybe
-import ThreeCircles.ThreeCircles (threeCircles)
+import           Data.Maybe
+import           Soddy.SoddyCircle         (Point2, soddyCircle)
+import           Soddy.SoddyCircle2        (soddyCircle')
+import           ThreeCircles.ThreeCircles (threeCircles)
 
 apollony :: (Point2, Double) -> (Point2, Double) -> (Point2, Double)
          -> Maybe (Point2, Double) -> Bool -> Int -> [(Point2, Double)]

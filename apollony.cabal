@@ -22,6 +22,7 @@ library
                      , Apollony.Apollony3
                      , ThreeCircles.Circumcircle
                      , ThreeCircles.ThreeCircles
+                     , Fractal3
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
