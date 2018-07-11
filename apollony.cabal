@@ -18,6 +18,10 @@ library
                      , Apollony.Apollony2
                      , Fractal2
                      , Fractal2anim
+                     , Soddy.SoddyCircle2
+                     , Apollony.Apollony3
+                     , ThreeCircles.Circumcircle
+                     , ThreeCircles.ThreeCircles
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT
