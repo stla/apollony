@@ -35,9 +35,9 @@ soddyCircle' (p1,r1) (p2,r2) (p3,r3) rother = sol
   d2 = (center2_x - c3_x)*(center2_x - c3_x) +
        (center2_y - c3_y)*(center2_y - c3_y)
   sol = if other
-    then if d1 > d2
+    then if d1 < d2
       then ((center1_x, center1_y),r)
       else ((center2_x, center2_y),r)
-    else if d1 < d2
+    else if d1 > d2
       then ((center1_x, center1_y),r)
       else ((center2_x, center2_y),r)

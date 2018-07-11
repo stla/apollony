@@ -91,7 +91,7 @@ keyboard rot1 rot2 rot3 zoom depth phi beta spheres c _ = do
       writeIORef spheres (fractal depth' phi' beta')
     'b' -> do
       depth' <- get depth
-      phi $~! (\x -> if x>(-0.1) then x-0.1 else x)
+      phi $~! (\x -> if x>(-0.9) then x-0.1 else x)
       phi' <- get phi
       beta' <- get beta
       writeIORef spheres (fractal depth' phi' beta')

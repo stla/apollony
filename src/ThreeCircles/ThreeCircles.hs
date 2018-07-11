@@ -15,8 +15,8 @@ inversion phi (mx,my) radius (cx,cy) = (mmx,mmy)
   imx = mx - ix - cx
   imy = my - cy
   im2 = imx*imx + imy*imy
-  mmx = ix + cx - k/im2*mx
-  mmy = cy - k/im2*my
+  mmx = ix + cx - k/im2*imx
+  mmy = cy - k/im2*imy
 
 oneCircle :: Double -> (Double,Double) -> Double -> Double -> Circle
 oneCircle phi center@(cx,cy) radius beta = ((ccx',ccy),rr)
