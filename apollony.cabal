@@ -23,6 +23,7 @@ library
                      , ThreeCircles.Circumcircle
                      , ThreeCircles.ThreeCircles
                      , Fractal3
+                     , Fractal3anim
   build-depends:       base >= 4.7 && < 5
                      , OpenGL
                      , GLUT

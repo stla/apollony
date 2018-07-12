@@ -1,7 +1,7 @@
-module Fractal2anim
+module Fractal3anim
   (main)
   where
-import           Apollony.Apollony2                (fractal)
+import           Apollony.Apollony3
 import           Control.Monad                     (when)
 import qualified Data.ByteString                   as B
 import           Data.IORef
@@ -10,7 +10,6 @@ import           Graphics.Rendering.OpenGL.GL
 import           Graphics.UI.GLUT
 import           System.Directory                  (doesDirectoryExist)
 import           Text.Printf
-
 
 white,black,red :: Color4 GLfloat
 white      = Color4    1    1    1    1
@@ -63,10 +62,12 @@ resize zoom s@(Size w h) = do
 keyboard :: IORef GLfloat -> IORef GLfloat -> IORef GLfloat -- rotations
          -> IORef GLdouble -- zoom
          -> IORef Int -- depth
+         -> IORef Double -- phi
+         -> IORef Double -- beta
          -> IORef Bool -- animation
          -> IORef [((Double,Double),Double)]
          -> KeyboardCallback
-keyboard rot1 rot2 rot3 zoom depth anim spheres c _ = do
+keyboard rot1 rot2 rot3 zoom depth phi beta anim spheres c _ = do
   case c of
     'e' -> rot1 $~! subtract 2
     'r' -> rot1 $~! (+2)
@@ -79,33 +80,62 @@ keyboard rot1 rot2 rot3 zoom depth anim spheres c _ = do
     'h' -> do
       depth $~! (+1)
       depth' <- get depth
-      writeIORef spheres (fractal depth')
+      phi' <- get phi
+      beta' <- get beta
+      writeIORef spheres (fractal depth' phi' beta')
     'n' -> do
       depth $~! (\n -> if n>1 then n-1 else n)
       depth' <- get depth
-      writeIORef spheres (fractal depth')
+      phi' <- get phi
+      beta' <- get beta
+      writeIORef spheres (fractal depth' phi' beta')
+    'g' -> do
+      depth' <- get depth
+      phi $~! (\x -> if x<0.9 then x+0.1 else x)
+      phi' <- get phi
+      beta' <- get beta
+      writeIORef spheres (fractal depth' phi' beta')
+    'b' -> do
+      depth' <- get depth
+      phi $~! (\x -> if x>(-0.9) then x-0.1 else x)
+      phi' <- get phi
+      beta' <- get beta
+      writeIORef spheres (fractal depth' phi' beta')
+    'f' -> do
+      depth' <- get depth
+      phi' <- get phi
+      beta $~! (+ pi/90)
+      beta' <- get beta
+      writeIORef spheres (fractal depth' phi' beta')
+    'v' -> do
+      depth' <- get depth
+      phi' <- get phi
+      beta $~! subtract (pi/90)
+      beta' <- get beta
+      writeIORef spheres (fractal depth' phi' beta')
     'a' -> anim $~! not
     'q' -> leaveMainLoop
     _   -> return ()
   postRedisplay Nothing
 
-idle :: IORef Bool -> IORef GLfloat -> IORef Int -> IdleCallback
-idle anim rot3 snapshot = do
+idle :: IORef Bool -> IORef Int -> IORef Double -> IORef Double -> IORef Int
+     -> IORef [((Double,Double),Double)] -> IdleCallback
+idle anim depth phi beta snapshot spheres = do
   anim' <- get anim
   when anim' $ do
     snapshot $~! (+1)
     snapshot' <- get snapshot
-    -- depth' <- get depth
-    -- writeIORef spheres (fractal depth')
-    rot3 $~! (+1)
+    depth' <- get depth
+    phi' <- get phi
+    beta $~! (+ pi/90)
+    beta' <- get beta
+    writeIORef spheres (fractal depth' phi' beta')
     ppmExists <- doesDirectoryExist "./ppm"
-    when (ppmExists && snapshot' <= 120) $ do
+    when (ppmExists && snapshot' <= 180) $ do
       let ppm = printf "ppm/pic%04d.ppm" snapshot'
       (>>=) capturePPM (B.writeFile ppm)
     postRedisplay Nothing
   return ()
-
-
 
 main :: IO ()
 main = do
@@ -128,24 +158,30 @@ main = do
   rot3 <- newIORef 0.0
   zoom <- newIORef 0.0
   let depth = 1
-      spheres = fractal depth
+      phi = 0.35
+      beta = 0.0
+      spheres = fractal depth phi beta
   depth' <- newIORef depth
+  phi' <- newIORef phi
+  beta' <- newIORef beta
   spheres' <- newIORef spheres
+  anim <- newIORef False
   displayCallback $= display Context {contextRot1 = rot1,
                                       contextRot2 = rot2,
                                       contextRot3 = rot3,
                                       contextSpheres = spheres'}
                              zoom
   reshapeCallback $= Just (resize 0)
-  anim <- newIORef False
-  keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom depth' anim spheres')
+  keyboardCallback $= Just (keyboard rot1 rot2 rot3 zoom depth' phi' beta' anim spheres')
   snapshot <- newIORef 0
-  idleCallback $= Just (idle anim rot3 snapshot)
+  idleCallback $= Just (idle anim depth' phi' beta' snapshot spheres')
   putStrLn "*** Apollonian gasket ***\n\
         \    To quit, press q.\n\
         \    Scene rotation: e, r, t, y, u, i\n\
         \    Zoom: l, m\n\
         \    Increase/decrease depth: h, n\n\
+        \    Increase/decrease phi: g, b\n\
+        \    Increase/decrease beta: f, v\n\
         \    Animation: a\n\
         \"
   mainLoop
